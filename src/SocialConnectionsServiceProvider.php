@@ -15,8 +15,14 @@ class SocialConnectionsServiceProvider extends ServiceProvider
     public function boot(): void
     {
 
-        $this->setupRoutes($this->app->router);
-        dump("my provider boot");
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+
+
+        $this->publishes([__DIR__.'/../config/social-connections.php' => config_path('social-connections.php')], 'config');
+
+        $this->loadMigrationsFrom(__DIR__.'/../migrations');
+
+        //dump(__CLASS__."->boot()");
 
     }
 
@@ -25,40 +31,9 @@ class SocialConnectionsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-
-    }
-
-
-    /**
-     * Define the routes for the application.
-     *
-     * @param  \Illuminate\Routing\Router $router
-     * @return void
-     */
-    public function setupRoutes(Router $router)
-    {
-        $controllersNamespace = 'Maynagashev\\SocialConnections\\Http\\Controllers';
-
-        // guests and other
-        $router->group(['namespace' => $controllersNamespace], function($router)
-        {
-            // Laravel Socialite routes
-            Route::get('social/redirect/{provider}', 'SocialController@getSocialRedirect')->name('social.redirect');
-            Route::get('social/handle/{provider}', 'SocialController@getSocialHandle')->name('social.handle');
-
-            // Ask for email address when connecting to providers, that has no email info.
-            Route::get('social/email', 'SocialController@getEmail')->name('social.email');
-            Route::post('social/email', 'SocialController@getEmail')->name('social.email.post');
-
-        });
-
-        // authenticated only
-        Route::group(['middleware' => 'auth', 'namespace' => $controllersNamespace], function ($router)
-        {
-            Route::get('social/remove/{provider}',  'SocialController@getRemove')->name('social.remove');
-            Route::get('social/add/{provider}',  'SocialController@getAdd')->name('social.add');
-
-        });
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/social-connections.php', 'social-connections'
+        );
     }
 
 }

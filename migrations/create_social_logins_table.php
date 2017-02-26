@@ -3,8 +3,8 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateSocialLoginsTable extends Migration
-{
+class CreateSocialLoginsTable extends Migration {
+
     /**
      * Run the migrations.
      *
@@ -13,9 +13,10 @@ class CreateSocialLoginsTable extends Migration
     public function up()
     {
         Schema::create('social_logins', function (Blueprint $table) {
+
             $table->increments('id');
             $table->integer('user_id')->unsigned()->index();
-            $table->string('provider', 32);
+            $table->string('provider', 60);
             $table->string('social_id')->nullable();
 
             $table->string('token')->nullable();
