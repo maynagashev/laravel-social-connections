@@ -1,0 +1,17 @@
+{
+    "name": "maynagashev/laravel-social-connections",
+    "description": "package adds social connections management, users can connect multiple social networks to their laravel account",
+    "type": "laravel-package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Maynagashev",
+            "email": "lifesup@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php" : "^7.0",
+        "laravel/socialite": "^3.0"
+    }
+}
