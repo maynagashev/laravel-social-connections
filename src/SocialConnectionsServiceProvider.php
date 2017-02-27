@@ -12,7 +12,7 @@ class SocialConnectionsServiceProvider extends ServiceProvider
     /**
      * Bootstrap the application services.
      */
-    public function boot(): void
+    public function boot()
     {
 
         $this->loadRoutesFrom(__DIR__.'/routes/web.php');
@@ -40,7 +40,7 @@ class SocialConnectionsServiceProvider extends ServiceProvider
     /**
      * Register the application services.
      */
-    public function register(): void
+    public function register()
     {
         $this->mergeConfigFrom(
             __DIR__.'/config/social-connections.php', 'social-connections'
