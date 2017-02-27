@@ -2,7 +2,7 @@
 
 namespace Maynagashev\SocialConnections\app\Http\Controllers;
 
-use Maynagashev\SocialConnections\app\Exceptions\ProviderNotAllowed;
+use Maynagashev\SocialConnections\app\Exceptions\ProviderExceptions;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Http\Request;
@@ -10,6 +10,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 use App\Social;
 use App\User;
+use App\UserSocial;
 //use App\Models\Role;
 //use App\Models\Profile;
 //use App\Models\Data;
@@ -21,22 +22,14 @@ class SocialController extends Controller
 
     private $deferred_redirect;
 
-    private function substitute($provider)
-    {
-        $s = Social::$substitutions;
-        foreach($s as $k => $v) {
-            $provider = ($provider == $k) ? $v : $provider;
-        }
-        return $provider;
-    }
+    protected $userSocial;
 
-    private function substitute_back($provider)
-    {
-        $s = Social::$substitutions;
-        foreach($s as $k => $v) {
-            $provider = ($provider == $v) ? $k : $provider;
-        }
-        return $provider;
+    protected function initUserSocial() {
+
+        $user = auth()->user();
+        $this->userSocial = ($user) ? UserSocial::find($user->id) : null;
+
+        return $this->userSocial;
     }
 
     private function fail_checks_before_connect($provider) {
@@ -44,7 +37,7 @@ class SocialController extends Controller
         // check for allowed providers
         $allowed_providers = Social::getProviders();
         if (!in_array( $provider, $allowed_providers )) {
-            throw ProviderNotAllowed::providerNotInArray($provider, $allowed_providers);
+            throw ProviderExceptions::providerNotAllowed($provider, $allowed_providers);
         }
 
         // don't check if guest
@@ -53,7 +46,7 @@ class SocialController extends Controller
         }
 
         // check for existing current socials for provider
-        $user = auth()->user();
+        $user = $this->userSocial;
         $currentList = $user->socialsByProvider($provider);
 
         if ($currentList->count()>0) {
@@ -71,11 +64,10 @@ class SocialController extends Controller
 
     public function getAdd(Request $request, $provider)
     {
-
-        $user = auth()->user();
+        $user = $this->initUserSocial();
 
         if (!$user) {
-            return $this->redirect_back("You must be authenticated to use this module.", 'warning');
+            abort(403, 'Forbidden. Authenticated users only.');
         }
 
         if ($this->fail_checks_before_connect($provider)) {
@@ -83,13 +75,12 @@ class SocialController extends Controller
         }
 
         // session vars and messages for $this->redirect_home() method invoked at the end
-        session()->put('redirect', "/profile/{$user->name}/edit");
+        session()->put('redirect', $user->editConnectionsUrl);
         session()->put('redirect_status', 'Connection to '.$this->substitute($provider).' established.' );
 
         // execute process of making connection, with checked = true status
         return $this->getSocialRedirect( $provider, true);
     }
-
     public function getSocialRedirect( $provider , $checked = false )
     {
 
@@ -103,7 +94,7 @@ class SocialController extends Controller
 
         $providerKey = Config::get('services.' . $provider);
         if (empty($providerKey)) {
-            dd('error','No such provider');
+            throw ProviderExceptions::providerNotFound($provider);
         }
 
         return Socialite::driver( $provider )->redirect();
@@ -239,12 +230,12 @@ class SocialController extends Controller
 
 // HELPERS
 
-
     private function unset_session_data()
     {
         session()->forget('provider');
         session()->forget('provider_data');
     }
+
 
     private function init_new_connection($provider, $social_id, $data) {
 
@@ -297,7 +288,6 @@ class SocialController extends Controller
         }
     }
 
-
     private function make_connection_without_email($user, $provider)
     {
 
@@ -316,6 +306,8 @@ class SocialController extends Controller
             return view('auth.social.email', compact('data', 'provider'));
         }
     }
+
+
     private function auth_user_and_redirect_home(User $user) {
 
         // before login, check if previously not set influencer type
@@ -328,8 +320,6 @@ class SocialController extends Controller
 
         return $this->redirect_home();
     }
-
-
     private function redirect_home()
     {
         if ( auth()->user()->hasRole('user') || auth()->user()->hasRole('administrator')) {
@@ -348,6 +338,7 @@ class SocialController extends Controller
 
         return \App::abort(500);  // user role not fetched
     }
+
 
     private function redirect_back($text, $alert_class='success')
     {
@@ -449,6 +440,24 @@ class SocialController extends Controller
         // dd($d, $user->user);
 
         return $d;
+    }
+
+    private function substitute($provider)
+    {
+        $s = Social::$substitutions;
+        foreach($s as $k => $v) {
+            $provider = ($provider == $k) ? $v : $provider;
+        }
+        return $provider;
+    }
+
+    private function substitute_back($provider)
+    {
+        $s = Social::$substitutions;
+        foreach($s as $k => $v) {
+            $provider = ($provider == $v) ? $k : $provider;
+        }
+        return $provider;
     }
 
 
