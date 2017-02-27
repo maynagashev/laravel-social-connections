@@ -15,12 +15,23 @@ class SocialConnectionsServiceProvider extends ServiceProvider
     public function boot(): void
     {
 
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        $this->loadRoutesFrom(__DIR__.'/routes/web.php');
 
 
-        $this->publishes([__DIR__.'/../config/social-connections.php' => config_path('social-connections.php')], 'config');
+        $this->publishes([
+            __DIR__.'/config/social-connections.php' => config_path('social-connections.php')
+        ], 'config');
 
-        $this->loadMigrationsFrom(__DIR__.'/../migrations');
+        $this->publishes([
+            __DIR__.'/app/Models/' => app_path()
+        ], 'models');
+
+        $this->publishes([
+            __DIR__.'/resources/views/' => resource_path('views/vendor')
+        ], 'views');
+
+
+        $this->loadMigrationsFrom(__DIR__.'/migrations');
 
         //dump(__CLASS__."->boot()");
 
@@ -32,7 +43,7 @@ class SocialConnectionsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/social-connections.php', 'social-connections'
+            __DIR__.'/config/social-connections.php', 'social-connections'
         );
     }
 
