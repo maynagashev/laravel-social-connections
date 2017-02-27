@@ -26,13 +26,17 @@ class SocialController extends Controller
 
     protected function initUserSocial() {
 
-        $user = auth()->user();
-        $this->userSocial = ($user) ? UserSocial::find($user->id) : null;
+        if (!$this->userSocial) {
+            $user = auth()->user();
+            $this->userSocial = ($user) ? UserSocial::find($user->id) : null;
+        }
 
         return $this->userSocial;
     }
 
     private function fail_checks_before_connect($provider) {
+
+        $user = $this->initUserSocial();
 
         // check for allowed providers
         $allowed_providers = Social::getProviders();
@@ -46,7 +50,6 @@ class SocialController extends Controller
         }
 
         // check for existing current socials for provider
-        $user = $this->userSocial;
         $currentList = $user->socialsByProvider($provider);
 
         if ($currentList->count()>0) {
@@ -322,7 +325,7 @@ class SocialController extends Controller
     }
     private function redirect_home()
     {
-        if ( auth()->user()->hasRole('user') || auth()->user()->hasRole('administrator')) {
+        if ( auth()->user()) {
 
             $redirect = session()->pull('redirect');
             $redirect_status = session()->pull('redirect_status');
@@ -331,12 +334,12 @@ class SocialController extends Controller
                 return redirect($redirect)->with('status', $redirect_status);
             }
             else {
-                return redirect('/home#');
+                return redirect('/');
             }
 
         }
 
-        return \App::abort(500);  // user role not fetched
+        return abort(403, 'Redirect home only for authenticated users');
     }
 
 
@@ -395,7 +398,7 @@ class SocialController extends Controller
 
         $connection = $this->init_new_connection($provider, $user->id, $data);
 
-        auth()->user()->social()->save($connection);
+        $this->userSocial->social()->save($connection);
 
         return $this->redirect_home();
     }
