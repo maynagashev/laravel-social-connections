@@ -2,13 +2,14 @@
 
 namespace Maynagashev\SocialConnections\app\Http\Controllers;
 
+use Maynagashev\SocialConnections\app\Exceptions\ProviderNotAllowed;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 
-use Maynagashev\SocialConnections\Models\Social;
-use Maynagashev\SocialConnections\Models\User;
+use App\Social;
+use App\User;
 //use App\Models\Role;
 //use App\Models\Profile;
 //use App\Models\Data;
@@ -18,7 +19,7 @@ use Validator;
 class SocialController extends Controller
 {
 
-    private $redirect;
+    private $deferred_redirect;
 
     private function substitute($provider)
     {
@@ -38,14 +39,12 @@ class SocialController extends Controller
         return $provider;
     }
 
-    private function checks_before_connect_fail($provider) {
+    private function fail_checks_before_connect($provider) {
 
         // check for allowed providers
-        $allowed_providers = Social::$providers;
+        $allowed_providers = Social::getProviders();
         if (!in_array( $provider, $allowed_providers )) {
-            $google = ( $provider == 'google' ) ? ' Use youtube instead.' : '';
-            $this->redirect = $this->redirect_back("Provider {$provider} not allowed. {$google}", 'warning');
-            return true;
+            throw ProviderNotAllowed::providerNotInArray($provider, $allowed_providers);
         }
 
         // don't check if guest
@@ -59,7 +58,7 @@ class SocialController extends Controller
 
         if ($currentList->count()>0) {
             $provider = $this->substitute($provider);
-            $this->redirect = redirect()->route('profile.edit', $user->name)
+            $this->deferred_redirect = redirect()->route('profile.edit', $user->name)
                 ->with('status', "You already have the connection with {$provider}, 
                 if you need to add another {$provider} account, disconnect current account first.")
                 ->with('alert', 'warning');
@@ -72,14 +71,15 @@ class SocialController extends Controller
 
     public function getAdd(Request $request, $provider)
     {
+
         $user = auth()->user();
 
         if (!$user) {
             return $this->redirect_back("You must be authenticated to use this module.", 'warning');
         }
 
-        if ($this->checks_before_connect_fail($provider)) {
-            return $this->redirect;
+        if ($this->fail_checks_before_connect($provider)) {
+            return $this->deferred_redirect;
         }
 
         // session vars and messages for $this->redirect_home() method invoked at the end
@@ -94,8 +94,8 @@ class SocialController extends Controller
     {
 
         if (!$checked) {
-            if ($this->checks_before_connect_fail($provider)) {
-                return $this->redirect;
+            if ($this->fail_checks_before_connect($provider)) {
+                return $this->deferred_redirect;
             }
         }
 
@@ -115,8 +115,8 @@ class SocialController extends Controller
 
         $provider = $this->substitute_back($provider);
 
-        if ($this->checks_before_connect_fail($provider)) {
-            return $this->redirect;
+        if ($this->fail_checks_before_connect($provider)) {
+            return $this->deferred_redirect;
         }
 
         if ( $request->input('denied') != '' ) {
@@ -351,6 +351,7 @@ class SocialController extends Controller
 
     private function redirect_back($text, $alert_class='success')
     {
+      //dump('redirect back', $text, $alert_class);
         return redirect()->back()->with('status', $text)->with('alert', $alert_class);
     }
 

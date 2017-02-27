@@ -5,7 +5,7 @@ $controllersNamespace = 'Maynagashev\\SocialConnections\\app\\Http\\Controllers'
 
 
 // FOR ALL
-Route::group(['namespace' => $controllersNamespace], function ($router) {
+Route::group([ 'namespace' => $controllersNamespace, 'middleware' => 'web' ], function ($router) {
 
     // Laravel Socialite routes
     Route::get('social/redirect/{provider}', 'SocialController@getSocialRedirect')->name('social.redirect');
@@ -19,7 +19,7 @@ Route::group(['namespace' => $controllersNamespace], function ($router) {
 
 
 // FOR AUTHENTICATED USERS
-Route::group(['middleware' => 'auth', 'namespace' => $controllersNamespace], function ($router) {
+Route::group([ 'namespace' => $controllersNamespace, 'middleware' => ['web', 'auth'] ], function ($router) {
 
     Route::get('social/remove/{provider}', 'SocialController@getRemove')->name('social.remove');
     Route::get('social/add/{provider}', 'SocialController@getAdd')->name('social.add');
