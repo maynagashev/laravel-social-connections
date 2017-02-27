@@ -1,6 +1,6 @@
 <?php
 
-namespace Maynagashev\SocialConnections\Http\Controllers;
+namespace Maynagashev\SocialConnections\app\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;

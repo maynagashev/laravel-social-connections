@@ -1,7 +1,7 @@
 <?php
 
 
-$controllersNamespace = 'Maynagashev\\SocialConnections\\Http\\Controllers';
+$controllersNamespace = 'Maynagashev\\SocialConnections\\app\\Http\\Controllers';
 
 
 // FOR ALL
