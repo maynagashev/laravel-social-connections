@@ -139,7 +139,7 @@ class SocialController extends Controller
         // if social_login exists, just update the data and auth user defined in connection
         if ($connection) {
 
-            $data = $this->fetch_fill_data($user, $provider);
+            $data = $this->repo->fetch_fill_data($user, $provider);
             $connection->fill($data);
             $connection->save();
 
@@ -274,7 +274,7 @@ class SocialController extends Controller
     private function make_connection_with_email($user, $provider)
     {
 
-        $data = $this->fetch_fill_data($user, $provider);
+        $data = $this->repo->fetch_fill_data($user, $provider);
 
         $connection = $this->init_new_connection($provider, $user->id, $data);
 
@@ -314,7 +314,7 @@ class SocialController extends Controller
         }
         // if not authorized, save provider data and ask for email
         else {
-            $data = $this->fetch_fill_data($user, $provider);
+            $data = $this->repo->fetch_fill_data($user, $provider);
 
             session()->put('provider', $provider);
             session()->put('provider_data', $data);
@@ -407,7 +407,7 @@ class SocialController extends Controller
 
     private function add_new_connection_to_current_user($user, $provider)
     {
-        $data = $this->fetch_fill_data($user, $provider);
+        $data = $this->repo->fetch_fill_data($user, $provider);
 
         $connection = $this->init_new_connection($provider, $user->id, $data);
 
@@ -416,47 +416,6 @@ class SocialController extends Controller
         return $this->redirect_home();
     }
 
-    private function fetch_fill_data($user, $provider = null)
-    {
-
-        $d = array(
-
-            // OAuth Two Providers
-            'token' => $user->token,
-            'refresh_token' => ((isset($user->refreshToken)) ? $user->refreshToken : ''), // not always provided
-            'expires' => ((isset($user->expiresIn)) ? $user->expiresIn : ''),
-
-            // OAuth One Providers
-            'tokenSecret' => ((isset($user->tokenSecret)) ? $user->tokenSecret : ''),
-
-            // All Providers
-            'provider_id' => $user->getId(),
-            'provider_nickname' => $user->getNickname(),
-            'provider_name' => $user->getName(),
-            'provider_email' => $user->getEmail(),
-            'provider_avatar' => $user->getAvatar(),
-        );
-
-        if ($provider=='google' || $provider=='youtube') {
-            if ($user->user['isPlusUser']) {
-                $d['provider_avatar'] = $user->avatar_original;
-                $d['provider_url'] = $user->user['url'];
-                $d['provider_nickname'] = $user->user['displayName'];
-            }
-            else {
-                $d['provider_avatar'] = $user->avatar_original;
-                $d['provider_url'] = '';
-                $d['provider_nickname'] = '[google_plus_disabled]';
-            }
-        }
-        if ($provider=='facebook') {
-            $d['provider_url'] = $user->user['link'];
-        }
-
-        // dd($d, $user->user);
-
-        return $d;
-    }
 
     private function substitute($provider)
     {
