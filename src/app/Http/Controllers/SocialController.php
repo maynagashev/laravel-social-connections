@@ -225,7 +225,7 @@ class SocialController extends Controller
 
         $user = $this->initUserSocial();
         
-        if ($user && $user->hasSocial($provider)) {
+        if ($user && $user->hasProvider($provider)) {
 
             if ($user->social->count()>0) {
 
