@@ -25,3 +25,12 @@ Route::group([ 'namespace' => $controllersNamespace, 'middleware' => ['web', 'au
     Route::get('social/add/{provider}', 'SocialController@getAdd')->name('social.add');
 
 });
+
+
+// FOR ADMIN
+Route::group([ 'namespace' => $controllersNamespace, 'middleware' => ['web', 'auth', 'admin'] ], function ($router) {
+
+    Route::resource('admin/social-connections', 'SocialResourceController');
+
+
+});

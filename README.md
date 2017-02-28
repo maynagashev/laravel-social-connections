@@ -5,6 +5,17 @@ multiple social networks to a laravel account.
 Status: *in development*.
 
 
+###Installation
+
+`php artisan vendor:publish`
+
+    php artisan vendor:publish --tag=config
+    php artisan vendor:publish --tag=models
+    php artisan vendor:publish --tag=views
+
+Controllers work from the package directory.
+
+
 ### Setup socialite providers credentials:
  
 #### 1) **.env**
@@ -20,4 +31,6 @@ _Examples:_ https://gist.github.com/maynagashev/259fce6e5a845b09dcb0a70e828966f5
 In config/services.php we just getting values from **.env** file with helper function **env('CONST_NAME')**.
 
 _Examples:_ https://gist.github.com/maynagashev/259fce6e5a845b09dcb0a70e828966f5#file-services-php
+
+
 
