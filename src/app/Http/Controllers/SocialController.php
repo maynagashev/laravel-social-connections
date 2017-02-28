@@ -3,10 +3,13 @@
 namespace Maynagashev\SocialConnections\app\Http\Controllers;
 
 use Maynagashev\SocialConnections\app\Exceptions\ProviderExceptions;
+use Maynagashev\SocialConnections\app\Repositories\SocialRepository;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
+
+
 
 use App\Social;
 use App\User;
@@ -24,6 +27,15 @@ class SocialController extends Controller
 
     protected $userSocial;
 
+    protected $repo;
+
+    public function __construct(SocialRepository $socialRepository)
+    {
+        $this->repo = $socialRepository;
+
+        return parent::__construct();
+    }
+
     protected function initUserSocial() {
 
         if (!$this->userSocial) {
@@ -34,7 +46,7 @@ class SocialController extends Controller
         return $this->userSocial;
     }
 
-    private function fail_checks_before_connect($provider) {
+    private function check_before_connect_has_error($provider) {
 
         $user = $this->initUserSocial();
 
@@ -73,7 +85,7 @@ class SocialController extends Controller
             abort(403, 'Forbidden. Authenticated users only.');
         }
 
-        if ($this->fail_checks_before_connect($provider)) {
+        if ($this->check_before_connect_has_error($provider)) {
             return $this->deferred_redirect;
         }
 
@@ -88,7 +100,7 @@ class SocialController extends Controller
     {
 
         if (!$checked) {
-            if ($this->fail_checks_before_connect($provider)) {
+            if ($this->check_before_connect_has_error($provider)) {
                 return $this->deferred_redirect;
             }
         }
@@ -109,7 +121,7 @@ class SocialController extends Controller
 
         $provider = $this->substitute_back($provider);
 
-        if ($this->fail_checks_before_connect($provider)) {
+        if ($this->check_before_connect_has_error($provider)) {
             return $this->deferred_redirect;
         }
 
@@ -211,7 +223,8 @@ class SocialController extends Controller
     {
         // at least one connection must remain to login
 
-        $user = auth()->user();
+        $user = $this->initUserSocial();
+        
         if ($user && $user->hasSocial($provider)) {
 
             if ($user->social->count()>0) {
