@@ -22,6 +22,7 @@ Publish package assets by running artisan command:
 Controllers work from the package directory.
 
 
+
 ### Setup socialite providers credentials:
  
 #### 1) **.env**

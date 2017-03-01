@@ -18,7 +18,7 @@ class SocialConnectionsServiceProvider extends ServiceProvider
     public function boot()
     {
 
-        // $this->app->setLocale('en');
+         $this->app->setLocale('en');
 
         $this->loadRoutesFrom(__DIR__.'/routes/web.php');
 
