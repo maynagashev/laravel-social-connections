@@ -91,7 +91,7 @@ class SocialController extends Controller
 
         // session vars and messages for $this->redirect_home() method invoked at the end
         session()->put('redirect', $user->editConnectionsUrl);
-        session()->put('redirect_status', 'Connection to '.$this->substitute($provider).' established.' );
+        session()->put('redirect_status', trans('social-connections::messages.connection-established', ['provider' => $this->substitute($provider)]));
 
         // execute process of making connection, with checked = true status
         return $this->getSocialRedirect( $provider, true);
@@ -232,7 +232,7 @@ class SocialController extends Controller
                 $c = $user->social()->where('provider', $provider)->first();
                 $c->delete();
 
-                return $this->redirect_back('Connection to '.$this->substitute($provider).' removed.');
+                return $this->redirect_back(trans('social-connections::messages.connection-removed', ['provider' => $this->substitute($provider)]));
 
             }
             else {

@@ -9,17 +9,24 @@ use Illuminate\Support\Facades\Route;
 
 class SocialConnectionsServiceProvider extends ServiceProvider
 {
+
+    public $packageName = 'social-connections';
+
     /**
      * Bootstrap the application services.
      */
     public function boot()
     {
 
+        // $this->app->setLocale('en');
+
         $this->loadRoutesFrom(__DIR__.'/routes/web.php');
+
+        $this->loadTranslationsFrom(__DIR__.'/resources/lang', $this->packageName);
 
 
         $this->publishes([
-            __DIR__.'/config/social-connections.php' => config_path('social-connections.php')
+            __DIR__."/config/{$this->packageName}.php" => config_path("{$this->packageName}.php")
         ], 'config');
 
         $this->publishes([
@@ -32,6 +39,11 @@ class SocialConnectionsServiceProvider extends ServiceProvider
 
 
         $this->loadMigrationsFrom(__DIR__.'/migrations');
+
+
+//        view()->composer('*', function ($view) {
+//            $view->with(['packageName' => $this->packageName]);
+//        });
 
         //dump(__CLASS__."->boot()");
 

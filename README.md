@@ -7,6 +7,12 @@ Status: *in development*.
 
 ###Installation
 
+Add new record to the **providers** list in `config/app.php`:
+
+`Maynagashev\SocialConnections\SocialConnectionsServiceProvider::class,`
+
+Publish package assets by running artisan command:
+
 `php artisan vendor:publish`
 
     php artisan vendor:publish --tag=config
@@ -31,6 +37,16 @@ _Examples:_ https://gist.github.com/maynagashev/259fce6e5a845b09dcb0a70e828966f5
 In config/services.php we just getting values from **.env** file with helper function **env('CONST_NAME')**.
 
 _Examples:_ https://gist.github.com/maynagashev/259fce6e5a845b09dcb0a70e828966f5#file-services-php
+
+
+### Localization:
+
+Current locale selected by application global configuration variable **locale**, set in `config/app.php`.
+
+###TODO:
+
+- localization files: **ru**, **en**. 
+
 
 
 
