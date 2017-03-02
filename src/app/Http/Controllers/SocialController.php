@@ -4,20 +4,20 @@ namespace Maynagashev\SocialConnections\app\Http\Controllers;
 
 use Maynagashev\SocialConnections\app\Exceptions\ProviderExceptions;
 use Maynagashev\SocialConnections\app\Repositories\SocialRepository;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 
-
-
 use App\Social;
 use App\User;
 use App\UserSocial;
+use Validator;
+
 //use App\Models\Role;
 //use App\Models\Profile;
 //use App\Models\Data;
-use Validator;
 
 
 class SocialController extends Controller
@@ -29,10 +29,11 @@ class SocialController extends Controller
 
     protected $repo;
 
+    protected $redirectAfterSignUp = 'complete.registration';
+
     public function __construct(SocialRepository $socialRepository)
     {
         $this->repo = $socialRepository;
-
         return parent::__construct();
     }
 
@@ -65,7 +66,7 @@ class SocialController extends Controller
         $currentList = $user->socialsByProvider($provider);
 
         if ($currentList->count()>0) {
-            $provider = $this->substitute($provider);
+            $provider = $this->repo->substitute($provider);
             $this->deferred_redirect = redirect()->route('profile.edit', $user->name)
                 ->with('status', "You already have the connection with {$provider}, 
                 if you need to add another {$provider} account, disconnect current account first.")
@@ -77,25 +78,6 @@ class SocialController extends Controller
         return false;
     }
 
-    public function getAdd(Request $request, $provider)
-    {
-        $user = $this->initUserSocial();
-
-        if (!$user) {
-            abort(403, 'Forbidden. Authenticated users only.');
-        }
-
-        if ($this->check_before_connect_has_error($provider)) {
-            return $this->deferred_redirect;
-        }
-
-        // session vars and messages for $this->redirect_home() method invoked at the end
-        session()->put('redirect', $user->editConnectionsUrl);
-        session()->put('redirect_status', trans('social-connections::messages.connection-established', ['provider' => $this->substitute($provider)]));
-
-        // execute process of making connection, with checked = true status
-        return $this->getSocialRedirect( $provider, true);
-    }
     public function getSocialRedirect( $provider , $checked = false )
     {
 
@@ -105,7 +87,7 @@ class SocialController extends Controller
             }
         }
 
-        $provider = $this->substitute($provider);
+        $provider = $this->repo->substitute($provider);
 
         $providerKey = Config::get('services.' . $provider);
         if (empty($providerKey)) {
@@ -119,7 +101,7 @@ class SocialController extends Controller
     public function getSocialHandle(Request $request, $provider )
     {
 
-        $provider = $this->substitute_back($provider);
+        $provider = $this->repo->substitute_back($provider);
 
         if ($this->check_before_connect_has_error($provider)) {
             return $this->deferred_redirect;
@@ -131,7 +113,7 @@ class SocialController extends Controller
                 ->with('message', 'You did not share your profile data with our social app.');
         }
 
-        $user = Socialite::driver( $this->substitute($provider) )->user();
+        $user = Socialite::driver( $this->repo->substitute($provider) )->user();
 
         // check existing connection in social_logins
         $connection = Social::where('social_id', '=', $user->id)->where('provider', '=', $provider)->first();
@@ -143,12 +125,10 @@ class SocialController extends Controller
             $connection->fill($data);
             $connection->save();
 
-            return $this->auth_user_and_redirect_home($connection->user);
+            return $this->repo->auth_user_and_redirect_home($connection->user);
         }
         //if not exist then execute process of creating new connection
         else {
-
-
 
             // if authenticated add connection to that user
             if (auth()->check()) {
@@ -188,7 +168,7 @@ class SocialController extends Controller
             }
 
             $email = $request->input('email');
-            $user = User::where('email', $email)->first();
+            $user = UserSocial::where('email', $email)->first();
 
             // 1. if user already have account, show message "need auth first"
             if ($user) {
@@ -199,16 +179,16 @@ class SocialController extends Controller
             else {
 
                 //create user
-                $new_user = $this->create_user($data, 0, $email);
+                $new_user = $this->repo->create_user($data, 0, $email);
 
                 // create connection
-                $connection = $this->init_new_connection($provider, $data['provider_id'], $data);
+                $connection = $this->repo->init_new_connection($provider, $data['provider_id'], $data);
                 $new_user->social()->save($connection);
 
                 // auth
                 auth()->login($new_user, true);
 
-                $this->unset_session_data();
+                $this->repo->unset_session_data();
 
                 return redirect()->route('profile.edit', $new_user->name);
             }
@@ -219,50 +199,52 @@ class SocialController extends Controller
         }
     }
 
+    public function getAdd(Request $request, $provider)
+    {
+        $user = $this->initUserSocial();
+
+        if (!$user) {
+            abort(403, 'Forbidden. Authenticated users only.');
+        }
+
+        if ($this->check_before_connect_has_error($provider)) {
+            return $this->deferred_redirect;
+        }
+
+        // session vars and messages for $this->redirect_home() method invoked at the end
+        session()->put('redirect', $user->editConnectionsUrl);
+        session()->put('redirect_status', trans('social-connections::messages.connection-established', ['provider' => $this->repo->substitute($provider)]));
+
+        // execute process of making connection, with checked = true status
+        return $this->getSocialRedirect( $provider, true);
+    }
+
     public function getRemove(Request $request, $provider)
     {
         // at least one connection must remain to login
 
         $user = $this->initUserSocial();
-        
+
         if ($user && $user->hasProvider($provider)) {
 
             if ($user->social->count()>0) {
 
-                $c = $user->social()->where('provider', $provider)->first();
-                $c->delete();
+                $user->social()->where('provider', $provider)->first()->delete();
 
-                return $this->redirect_back(trans('social-connections::messages.connection-removed', ['provider' => $this->substitute($provider)]));
+                return $this->repo->redirect_back(trans('social-connections::messages.connection-removed', ['provider' => $this->repo->substitute($provider)]));
 
             }
             else {
-                return $this->redirect_back("At least one channel must remain so you can log in the next time.", 'warning');
+                return $this->repo->redirect_back("At least one channel must remain so you can log in the next time.", 'warning');
             }
         }
         else {
-            return $this->redirect_back('Connection already removed.');
+            return $this->repo->redirect_back('Connection already removed.');
         }
     }
 
-// HELPERS
+// Sub Actions
 
-    private function unset_session_data()
-    {
-        session()->forget('provider');
-        session()->forget('provider_data');
-    }
-
-
-    private function init_new_connection($provider, $social_id, $data) {
-
-
-        $connection = new Social();
-        $connection->social_id = $social_id;
-        $connection->provider = $provider;
-        $connection->fill($data);
-
-        return $connection;
-    }
 
     /**
      * 1. Make new connection - email provided
@@ -276,9 +258,9 @@ class SocialController extends Controller
 
         $data = $this->repo->fetch_fill_data($user, $provider);
 
-        $connection = $this->init_new_connection($provider, $user->id, $data);
+        $connection = $this->repo->init_new_connection($provider, $user->id, $data);
 
-        $exist_user = User::where('email', '=', $data['provider_email'])->first();
+        $exist_user = UserSocial::where('email', '=', $data['provider_email'])->first();
 
         // if email already exists in users, but no connection
         if ($exist_user) {
@@ -286,13 +268,13 @@ class SocialController extends Controller
             // make connection
             $exist_user->social()->save($connection);
 
-            return $this->auth_user_and_redirect_home($exist_user);
+            return $this->repo->auth_user_and_redirect_home($exist_user);
         }
         // email not exists in users
         else {
 
             //create user
-            $new_user = $this->create_user($data, 1);
+            $new_user = $this->repo->create_user($data, 1);
 
             // create connection
             $new_user->social()->save($connection);
@@ -300,7 +282,7 @@ class SocialController extends Controller
             // auth
             auth()->login($new_user, true);
 
-            return redirect()->route('profile.edit', $new_user->name);
+            return redirect()->route($this->redirectAfterSignUp);
         }
     }
 
@@ -324,116 +306,16 @@ class SocialController extends Controller
     }
 
 
-    private function auth_user_and_redirect_home(User $user) {
-
-        // before login, check if previously not set influencer type
-        if (!$user->is_influencer) {
-            $user->is_influencer = 1;
-            $user->save();
-        }
-
-        auth()->login($user, true);
-
-        return $this->redirect_home();
-    }
-    private function redirect_home()
-    {
-        if ( auth()->user()) {
-
-            $redirect = session()->pull('redirect');
-            $redirect_status = session()->pull('redirect_status');
-
-            if ($redirect && $redirect_status) {
-                return redirect($redirect)->with('status', $redirect_status);
-            }
-            else {
-                return redirect('/');
-            }
-
-        }
-
-        return abort(403, 'Redirect home only for authenticated users');
-    }
-
-
-    private function redirect_back($text, $alert_class='success')
-    {
-      //dump('redirect back', $text, $alert_class);
-        return redirect()->back()->with('status', $text)->with('alert', $alert_class);
-    }
-
-    /**
-     * @param $data  (fetched data from $this->fetch_fill_data)
-     * @param int $email_verified
-     * @param string $email
-     * @return User
-     */
-    private function create_user($data, $email_verified= 1, $email = null) {
-
-        $name = $data['provider_name'];
-        $name = (User::where('name', $name)->count() > 0) ? $name.'_'.uniqid() : $name;  // if that name exists - add uniqid
-
-        $new_user = new User;
-        $new_user->active = 1;
-        $new_user->is_influencer = 1;
-        $new_user->email_verified = $email_verified;
-        $new_user->name = $name;
-        $new_user->email = ($data['provider_email']) ? $data['provider_email'] : $email;
-        $new_user->password = bcrypt(str_random(16));
-        $new_user->activation_code = str_random(60) . $data['provider_email'];
-
-
-        $name = explode(' ', $data['provider_name']);
-        if (count($name) >= 1) $new_user->first_name = $name[0];
-        if (count($name) >= 2) $new_user->last_name = $name[1];
-
-
-        $new_user->signup_sm_ip_address	= request()->ip();
-
-        // create user
-        $new_user->save();
-
-        // create role
-        $role = Role::whereName('user')->first();
-        $new_user->assignRole($role);
-
-        // create profile
-        $profile = new Profile;
-        $new_user->profile()->save($profile);
-
-
-        return $new_user;
-    }
 
     private function add_new_connection_to_current_user($user, $provider)
     {
         $data = $this->repo->fetch_fill_data($user, $provider);
 
-        $connection = $this->init_new_connection($provider, $user->id, $data);
+        $connection = $this->repo->init_new_connection($provider, $user->id, $data);
 
         $this->userSocial->social()->save($connection);
 
-        return $this->redirect_home();
+        return $this->repo->redirect_home();
     }
-
-
-    private function substitute($provider)
-    {
-        $s = Social::$substitutions;
-        foreach($s as $k => $v) {
-            $provider = ($provider == $k) ? $v : $provider;
-        }
-        return $provider;
-    }
-
-    private function substitute_back($provider)
-    {
-        $s = Social::$substitutions;
-        foreach($s as $k => $v) {
-            $provider = ($provider == $v) ? $k : $provider;
-        }
-        return $provider;
-    }
-
 
 }
