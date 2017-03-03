@@ -11,8 +11,10 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php" : "^7.0",
+        "php": "^7.0",
+        "illuminate/support": "^5.2",
         "laravel/socialite": "^3.0",
-        "illuminate/support": "^5.2"
+        "socialiteproviders/vkontakte": "^3.0"
     }
+
 }
