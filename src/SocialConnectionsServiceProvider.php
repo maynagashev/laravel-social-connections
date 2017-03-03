@@ -3,9 +3,6 @@
 namespace Maynagashev\SocialConnections;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Route;
-
 
 class SocialConnectionsServiceProvider extends ServiceProvider
 {
@@ -24,6 +21,10 @@ class SocialConnectionsServiceProvider extends ServiceProvider
 
         $this->loadTranslationsFrom(__DIR__.'/resources/lang', $this->packageName);
 
+        $this->loadMigrationsFrom(__DIR__.'/migrations');
+
+
+        // Publish assets
 
         $this->publishes([
             __DIR__."/config/{$this->packageName}.php" => config_path("{$this->packageName}.php")
@@ -36,16 +37,6 @@ class SocialConnectionsServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/resources/views/' => resource_path('views/vendor')
         ], 'views');
-
-
-        $this->loadMigrationsFrom(__DIR__.'/migrations');
-
-
-//        view()->composer('*', function ($view) {
-//            $view->with(['packageName' => $this->packageName]);
-//        });
-
-        //dump(__CLASS__."->boot()");
 
     }
 

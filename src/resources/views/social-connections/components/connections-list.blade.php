@@ -1,50 +1,69 @@
 {{-- require: $user, App\Social  --}}
-@php
-    $userSocial = App\Social::find($user->id);
-dump($userSocial);
-@endphp
-<div class="panel panel-success">
-    <div class="panel-heading">Social Accounts Connection</div>
 
-    <div class="panel-body pt-3">
+<div class="form-horizontal">
+
+    <table class="table table-striped">
+        <tbody>
+
+        @foreach(App\Social::getProviders() as $provider)
+            <tr><td style="padding-top:20px;">
+                    <div class="form-group has-feedback">
+                        <label class="col-sm-4 control-label">
+                            @if ($provider=='youtube')
+                                <i class="fa fa-google ion-social-google mr-1" aria-hidden="true"></i>
+                                google:
+                            @else
+                                @php
+                                    switch ($provider) {
+                                        case 'vkontakte':  $icon = 'vk'; break;
+                                        default: $icon = $provider;
+                                    }
+                                @endphp
+                                <i class="fa fa-{{$icon}} mr-1" aria-hidden="true"></i>
+                                {{$provider}}:
+                            @endif
+
+                        </label>
+
+                        @if ($user->hasProvider($provider))
+                            @php $p = $user->getProvider($provider); @endphp
 
 
-        <div class="form-horizontal">
-            @foreach(App\Social::getProviders() as $provider)
-                @if ($provider=='instagram') @continue @endif
-                <div class="form-group has-feedback">
-                    <label class="col-sm-4 control-label">
-                        @if ($provider=='youtube')
-                            <i class="fa fa-google mr-1" aria-hidden="true"></i>
-                            Google:
+                            <div class="col-sm-4">
+                                <p class="form-control-static">
+                                    <strong style="color:green;">{{trans('social-connections::title.provider-connected')}}</strong>
+                                <p class="text-muted">
+                                    <small>
+                                        @if($p->provider_url)
+                                            <a href="{{$p->provider_url}}" target="_blank">{{$p->provider_name}}</a>
+                                        @else
+                                            {{$p->provider_name}}
+                                        @endif
+                                    </small>
+
+                                </p>
+                                @if ($p->provider_avatar) <img src="{{$p->provider_avatar}}" style="max-width:200px;"> @endif
+                                </p>
+                            </div>
+                            <div class="col-sm-4">
+                                <a class="btn btn-danger btn-sm" href="{{ route('social.remove', $provider) }}">{{trans('social-connections::title.btn-disconnect')}}</a>
+                            </div>
+
+                            {{--{{dump($p->toArray())}}--}}
+
                         @else
-                            <i class="fa fa-{{$provider}} mr-1" aria-hidden="true"></i>
-                            {{$provider}}:
+                            <div class="col-sm-6">
+                                <a class="btn btn-primary" href="{{ route('social.add', $provider) }}">{{trans('social-connections::title.btn-connect')}}</a>
+                            </div>
                         @endif
 
 
-                    </label>
-
-                    @if ($userSocial->hasSocial($provider))
-                        <div class="col-sm-2">
-                            <p class="form-control-static">
-                                <span>connected</span>
-                            </p>
-                        </div>
-                        <div class="col-sm-4">
-                            <a class="btn" href="{{ route('social.remove', $provider) }}">Disconnect and wipe data</a>
-                        </div>
-
-                    @else
-                        <div class="col-sm-6">
-                            <a class="btn" href="{{ route('social.add', $provider) }}">Connect</a>
-                        </div>
-                    @endif
 
 
-                </div>
+                    </div>
+                </td></tr>
 
-            @endforeach
-        </div>
-    </div>
+        @endforeach
+        </tbody>
+    </table>
 </div>

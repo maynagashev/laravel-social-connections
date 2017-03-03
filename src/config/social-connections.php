@@ -3,8 +3,17 @@
 return [
 
     'providers' => [
-        'vk',
-        'facebook'
+        'vkontakte',
+        'facebook',
+        'google'
+
+    ],
+
+    'primary' => [
+        'vkontakte'
     ]
-    
+
+
+
+
 ];

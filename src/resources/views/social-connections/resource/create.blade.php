@@ -1,6 +1,3 @@
-@extends('admin.brands.layout')
-
-
 
 
 @section('sub-content')

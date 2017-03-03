@@ -1,4 +1,4 @@
-@extends('admin.brands.layout')
+@extends('vendor.social-connections.layout')
 
 
 @section('sub-content')

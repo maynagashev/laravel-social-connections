@@ -1,23 +1,17 @@
 <?php
 
-namespace Maynagashev\SocialConnections\Models;
+namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Social extends Model
 {
-
     protected $table = 'social_logins';
 
-    public static $providers = [
-        'twitter',
-        'facebook',
-        'instagram',
-        'youtube'
-    ];
+    public static $providers = [];
 
     public static $substitutions = [
-        'youtube' => 'google'
+     
     ];
 
     protected $fillable = [
@@ -37,9 +31,24 @@ class Social extends Model
         'provider_special'
     ];
 
+    public static function getProviders()
+    {
+
+        $providers = config('social-connections.providers') !== null ?
+            config('social-connections.providers') : [];
+
+        self::$providers = $providers; // for compatibility
+
+        return $providers;
+    }
+    
+    public function getProvider($provider) {
+        
+    }
+
     public function user()
     {
-        return $this->belongsTo('App\Models\User');
+        return $this->belongsTo(User::class);
     }
 
 }
