@@ -2,7 +2,7 @@
 Laravel package, adds social connections management, users can connect
 multiple social networks to a laravel account.
 
-Status: *in development*.
+Status: *de alpha*.
 
 ### Capabilities
 - extended handler for oauth providers (with asking for email, if email address not returned from provider)
