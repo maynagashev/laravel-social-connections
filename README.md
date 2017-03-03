@@ -4,6 +4,11 @@ multiple social networks to a laravel account.
 
 Status: *in development*.
 
+### Capabilities
+- extended handler for oauth providers (with asking for email, if email address not returned from provider)
+- resource controller with views for showing current connections in admin
+- view component for displaying social network buttons in login/signup form
+
 
 ###Installation
 
@@ -52,6 +57,8 @@ Current locale selected by application global configuration variable **locale**,
 - Social connections list in user's profile, with `$app->setLocale('en')`
 
 ![screen1](https://raw.githubusercontent.com/maynagashev/laravel-social-connections/master/screens/01.png)
+
+- List of all supported providers and primary ones - set in config.  
 ![screen2](https://raw.githubusercontent.com/maynagashev/laravel-social-connections/master/screens/02.png)
 
 
