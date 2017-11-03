@@ -14,6 +14,8 @@ use App\Social;
 use App\User;
 use App\UserSocial;
 use Validator;
+use Auth;
+
 
 //use App\Models\Role;
 //use App\Models\Profile;
@@ -113,7 +115,14 @@ class SocialController extends Controller
                 ->with('message', 'You did not share your profile data with our social app.');
         }
 
-        $user = Socialite::driver( $this->repo->substitute($provider) )->user();
+        try{
+            $user = Socialite::driver( $this->repo->substitute($provider) )->user();
+        }catch(\Exception $e){
+            return redirect()->to('login')
+                ->with('status', 'danger')
+                ->with('message', 'You session expired, try again.');
+        }
+
 
         // check existing connection in social_logins
         $connection = Social::where('social_id', '=', $user->id)->where('provider', '=', $provider)->first();
@@ -136,9 +145,11 @@ class SocialController extends Controller
             }
             // else proccess guest sign up
             else {
+
                 if ($user->email) {
                     return $this->make_connection_with_email($user, $provider);
                 } else {
+
                     return $this->make_connection_without_email($user, $provider);
                 }
             }
@@ -153,50 +164,83 @@ class SocialController extends Controller
      */
     public function getEmail(Request $request)
     {
-
         $provider = session()->get('provider');
         $data = session()->get('provider_data');
 
-        if (!$provider || !$data) die("Session expired.");
+        if (!$provider || !$data) return redirect('/login');
 
         // if submitted new email
-        if ($request->has('email')) {
-
-            $validator = Validator::make($request->all(), ['email' => 'email|required']);
-            if ($validator->fails()) {
-                return back()->withErrors($validator)->withInput();
-            }
-
-            $email = $request->input('email');
-            $user = UserSocial::where('email', $email)->first();
-
-            // 1. if user already have account, show message "need auth first"
-            if ($user) {
-                return view('auth.social.password', compact('provider', 'data', 'email'));
-            }
-
-            // 2. else new user, create new account active (email not verified)
-            else {
-
-                //create user
-                $new_user = $this->repo->create_user($data, 0, $email);
-
-                // create connection
-                $connection = $this->repo->init_new_connection($provider, $data['provider_id'], $data);
-                $new_user->social()->save($connection);
-
-                // auth
-                auth()->login($new_user, true);
-
-                $this->repo->unset_session_data();
-
-                return redirect()->route('profile.edit', $new_user->name);
-            }
+        $validator = Validator::make($request->all(), ['email' => 'email|required']);
+        if ($validator->fails()) {
+            return view('auth.social.email', compact('provider', 'data'))->withErrors($validator);
         }
-        // else show form
+
+        $email = $request->input('email');
+        $user = UserSocial::where('email', $email)->first();
+
+        // 1. if user already have account, show message "need auth first"
+        if ($user) {
+            return view('auth.social.password', compact('provider', 'data', 'email'));
+        }
+        // 2. else new user, create new account active (email not verified)
         else {
-            return view('auth.social.email', compact('provider', 'data'));
+
+            //create user
+            $new_user = $this->repo->create_user($data, 0, $email);
+
+            // create connection
+            $connection = $this->repo->init_new_connection($provider, $data['provider_id'], $data);
+            $new_user->social()->save($connection);
+
+            // auth
+            auth()->login($new_user, true);
+
+            $this->repo->unset_session_data();
+
+
+            return redirect("/");
         }
+
+    }
+
+    public function addNewAccountFromPassword(Request $request){
+        $provider = session()->get('provider');
+        $data = session()->get('provider_data');
+
+        if (!$provider || !$data) return redirect('/login');
+        //dd($request->all());
+        $validator = Validator::make($request->all(), [
+            'password' => 'required',
+            'email' => 'email|required'
+        ]);
+        if ($validator->fails()) {
+            return view('auth.social.password', compact('provider', 'data','email'))->withErrors($validator);
+        }
+        $email=$request->email;
+        $password=$request->password;
+
+        if(Auth::attempt(['email' => $email, 'password' => $password])){
+
+
+
+
+            $connection = $this->repo->init_new_connection($provider, $data['provider_id'], $data);
+
+            $exist_user = UserSocial::where('email', '=', $email)->first();
+
+            // if email already exists in users, but no connection
+            if ($exist_user) {
+
+                // make connection
+                $exist_user->social()->save($connection);
+
+                return $this->repo->auth_user_and_redirect_home($exist_user);
+            }
+            //redirect()->route($this->redirectAfterSignUp);
+        }else{
+            return view('auth.social.password', compact('provider', 'data','email'))->withErrors(['wrongPassword'=>'¬ведите правильный пароль']);
+        }
+
     }
 
     public function getAdd(Request $request, $provider)
@@ -281,13 +325,13 @@ class SocialController extends Controller
 
             // auth
             auth()->login($new_user, true);
+            //return redirect()->route($this->redirectAfterSignUp);
 
-            return redirect()->route($this->redirectAfterSignUp);
+            return redirect("/");
         }
     }
 
-    private function make_connection_without_email($user, $provider)
-    {
+    private function make_connection_without_email($user, $provider){
 
         // If logged in, just create connection to current user
         // (we already checked that we have no records with combination [provider + social_id])

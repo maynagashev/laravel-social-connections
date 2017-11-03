@@ -12,8 +12,9 @@ Route::group([ 'namespace' => $controllersNamespace, 'middleware' => 'web' ], fu
     Route::get('social/handle/{provider}', 'SocialController@getSocialHandle')->name('social.handle');
 
     // Ask for email address when connecting to providers, that has no email info.
-    Route::get('social/email', 'SocialController@getEmail')->name('social.email');
+    //Route::get('social/email', 'SocialController@getEmail')->name('social.email');
     Route::post('social/email', 'SocialController@getEmail')->name('social.email.post');
+    Route::post('social/add_new_from_password', 'SocialController@addNewAccountFromPassword')->name('social.password.post');
 
 });
 
